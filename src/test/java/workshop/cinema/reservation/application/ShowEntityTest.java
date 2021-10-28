@@ -5,6 +5,7 @@ import akka.actor.typed.ActorRef;
 import akka.persistence.testkit.javadsl.EventSourcedBehaviorTestKit;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
+import io.vavr.control.Option;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import workshop.cinema.base.domain.Clock;
@@ -40,7 +41,7 @@ class ShowEntityTest {
     public static void cleanUp() {
         testKit.shutdownTestKit();
     }
-    
+
     private Clock clock = new FixedClock();
 
     @Test
@@ -101,7 +102,7 @@ class ShowEntityTest {
         var showId = ShowId.of();
         var showEntityRef = testKit.spawn(ShowEntity.create(showId, clock));
         var commandResponseProbe = testKit.<ShowEntityResponse>createTestProbe();
-        var showResponseProbe = testKit.<Show>createTestProbe();
+        var showResponseProbe = testKit.<Option<Show>>createTestProbe();
 
         var reserveSeat = randomReserveSeat(showId);
 
@@ -115,7 +116,7 @@ class ShowEntityTest {
         showEntityRef.tell(new ShowEntityCommand.GetShow(showResponseProbe.ref()));
 
         //then
-        Show returnedShow = showResponseProbe.receiveMessage();
+        Show returnedShow = showResponseProbe.receiveMessage().get();
         assertThat(returnedShow.seats().get(reserveSeat.seatNumber()).get().isReserved()).isTrue();
     }
 
